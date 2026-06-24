@@ -1,0 +1,9 @@
+config.py
+profils.json
+actions.json
+matches.json
+blocks.json
+reports.json
+langues.json
+__pycache__/
+*.pyc
