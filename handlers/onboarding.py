@@ -125,6 +125,8 @@ async def reponse_cgu(message: Message, state: FSMContext):
 @router.message(F.text.contains("🔥"))
 async def raccourci_decouvrir(message: Message, state: FSMContext):
     await state.clear()
+    from database import rafraichir_username
+    rafraichir_username(message.from_user.id, message.from_user.username)
     from handlers.discovery import envoyer_prochain
     await envoyer_prochain(message, message.from_user.id)
 
@@ -434,6 +436,13 @@ async def recevoir_telephone(message: Message, state: FSMContext):
     telephone = message.contact.phone_number
     username = message.from_user.username  # peut être None
     await state.update_data(telephone=telephone, username=username)
+
+    # Encouragement selon que l'utilisateur a un username ou non
+    if username:
+        await message.answer(t(message.from_user.id, "rappel_username_ok", username=username))
+    else:
+        await message.answer(t(message.from_user.id, "rappel_username_manquant"))
+
     await finir_inscription(message, state)
 
 

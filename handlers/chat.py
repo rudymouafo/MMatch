@@ -15,32 +15,19 @@ router = Router()
 
 
 async def envoyer_contact_match(bot, destinataire_id, profil_autre):
-    """Envoie la carte de contact d'un match."""
+    """Envoie le lien Telegram d'un match (jamais le numéro)."""
     prenom = profil_autre.get("prenom", "")
     username = profil_autre.get("username")
-    telephone = profil_autre.get("telephone")
 
-    if telephone:
-        vcard = None
-        if username:
-            vcard = (
-                "BEGIN:VCARD\n"
-                "VERSION:3.0\n"
-                f"FN:{prenom}\n"
-                f"TEL;TYPE=CELL:{telephone}\n"
-                f"X-TELEGRAM:@{username}\n"
-                "END:VCARD"
-            )
-        await bot.send_contact(
-            int(destinataire_id),
-            phone_number=telephone,
-            first_name=prenom,
-            vcard=vcard,
-        )
-    elif username:
+    if username:
         await bot.send_message(
             int(destinataire_id),
-            t(destinataire_id, "contact_username", prenom=prenom, username=username),
+            t(destinataire_id, "carte_contact", prenom=prenom, username=username),
+        )
+    else:
+        await bot.send_message(
+            int(destinataire_id),
+            t(destinataire_id, "contact_sans_username", prenom=prenom),
         )
 
 

@@ -821,7 +821,7 @@ TRADUCTIONS = {
         "ru": "💞 У тебя совпадение с <b>{prenom}</b>! К сожалению, их контакт сейчас недоступен. 🌸",
     },
     "match_titre": {
-        "fr": "💞✨ <b>C'EST UN MATCH !</b> ✨💞\n\nToi et <b>{prenom}</b> vous êtes plu·e·s mutuellement ! 🥰\n\nVoici son contact juste en dessous 👇\nLance-toi… le premier message est souvent le plus beau ! 💌",
+        "fr": "💞✨ <b>C'EST UN MATCH !</b> ✨💞\n\n<b>{prenom}</b> et toi vous plaisez ! 🥰\n\nVoici son contact juste en dessous 👇\nLance-toi… le premier message est souvent le plus beau ! 💌",
         "en": "💞✨ <b>IT'S A MATCH!</b> ✨💞\n\nYou and <b>{prenom}</b> liked each other! 🥰\n\nHere is their contact just below 👇\nGo for it… the first message is often the sweetest! 💌",
         "ru": "💞✨ <b>ЭТО СОВПАДЕНИЕ!</b> ✨💞\n\nТы и <b>{prenom}</b> понравились друг другу! 🥰\n\nВот их контакт чуть ниже 👇\nСделай шаг… первое сообщение часто самое приятное! 💌",
     },
@@ -829,6 +829,28 @@ TRADUCTIONS = {
         "fr": "📲 Contacter {prenom}",
         "en": "📲 Contact {prenom}",
         "ru": "📲 Связаться с {prenom}",
+    },
+    # ---------- Carte de contact (lien Telegram, sans numéro) ----------
+    "carte_contact": {
+        "fr": "╭───────────────╮\n   📲 <b>{prenom}</b>\n   👉 <a href=\"https://t.me/{username}\">Ouvrir la conversation</a>\n╰───────────────╯\n\n<i>Clique sur le lien pour discuter directement sur Telegram 💬</i>",
+        "en": "╭───────────────╮\n   📲 <b>{prenom}</b>\n   👉 <a href=\"https://t.me/{username}\">Open the chat</a>\n╰───────────────╯\n\n<i>Tap the link to chat directly on Telegram 💬</i>",
+        "ru": "╭───────────────╮\n   📲 <b>{prenom}</b>\n   👉 <a href=\"https://t.me/{username}\">Открыть чат</a>\n╰───────────────╯\n\n<i>Нажми на ссылку, чтобы общаться прямо в Telegram 💬</i>",
+    },
+    "contact_sans_username": {
+        "fr": "💞 Tu as matché avec <b>{prenom}</b> ! Mais cette personne n'a pas encore de nom d'utilisateur Telegram public, le contact n'est pas disponible pour le moment. 🌸",
+        "en": "💞 You matched with <b>{prenom}</b>! But this person doesn't have a public Telegram username yet, so the contact isn't available right now. 🌸",
+        "ru": "💞 У тебя совпадение с <b>{prenom}</b>! Но у этого человека пока нет публичного имени пользователя Telegram, поэтому контакт недоступен. 🌸",
+    },
+    # ---------- Encouragement username ----------
+    "rappel_username_ok": {
+        "fr": "✅ <b>Parfait !</b> Ton nom d'utilisateur Telegram (@{username}) permettra à tes matchs de te contacter facilement. 🌸",
+        "en": "✅ <b>Perfect!</b> Your Telegram username (@{username}) will let your matches contact you easily. 🌸",
+        "ru": "✅ <b>Отлично!</b> Твоё имя пользователя Telegram (@{username}) позволит твоим совпадениям легко связаться с тобой. 🌸",
+    },
+    "rappel_username_manquant": {
+        "fr": "⚠️ <b>Petit point important !</b>\n\nTu n'as pas encore de <b>nom d'utilisateur Telegram</b>. Sans lui, tes matchs ne pourront pas te contacter ! 😔\n\n<b>Comment en créer un (1 minute) :</b>\n1️⃣ Va dans les <b>Réglages</b> de Telegram\n2️⃣ Touche <b>« Nom d'utilisateur »</b>\n3️⃣ Choisis un nom (ex : @julie_paris)\n\nFais-le maintenant, puis reviens ici 🌸\n<i>C'est ce qui te permettra de rencontrer du monde !</i>",
+        "en": "⚠️ <b>Important note!</b>\n\nYou don't have a <b>Telegram username</b> yet. Without it, your matches won't be able to contact you! 😔\n\n<b>How to create one (1 minute):</b>\n1️⃣ Go to Telegram <b>Settings</b>\n2️⃣ Tap <b>« Username »</b>\n3️⃣ Choose a name (e.g. @julie_paris)\n\nDo it now, then come back here 🌸\n<i>This is what will let you meet people!</i>",
+        "ru": "⚠️ <b>Важный момент!</b>\n\nУ тебя ещё нет <b>имени пользователя Telegram</b>. Без него твои совпадения не смогут связаться с тобой! 😔\n\n<b>Как создать (1 минута):</b>\n1️⃣ Зайди в <b>Настройки</b> Telegram\n2️⃣ Нажми <b>« Имя пользователя »</b>\n3️⃣ Выбери имя (напр. @julie_paris)\n\nСделай это сейчас, затем вернись сюда 🌸\n<i>Именно это позволит тебе знакомиться!</i>",
     },
 
 
