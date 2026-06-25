@@ -16,6 +16,7 @@ from keyboards import (
     clavier_localisation,
     clavier_precedent,
     clavier_medias,
+    clavier_telephone,
     clavier_langue,
     clavier_cgu_trad,
     menu_profil,
@@ -25,8 +26,8 @@ from keyboards import (
 router = Router()
 
 
-# ---------- Barre de progression ----------
-def progression(user_id, etape, total=7):
+# ---------- Barre de progression (8 étapes) ----------
+def progression(user_id, etape, total=8):
     pleins = "▰" * etape
     vides = "▱" * (total - etape)
     mot = t(user_id, "etape")
@@ -232,6 +233,11 @@ async def retour_vers_bio(message: Message, state: FSMContext):
 # ---------- Étape 1 : prénom ----------
 @router.message(Inscription.prenom)
 async def saisir_prenom(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(
+            t(message.from_user.id, "prenom_invalide", min=config.PRENOM_MIN, max=config.PRENOM_MAX)
+        )
+        return
     prenom = message.text.strip()
     if len(prenom) < config.PRENOM_MIN or len(prenom) > config.PRENOM_MAX:
         await message.answer(
@@ -249,6 +255,9 @@ async def saisir_prenom(message: Message, state: FSMContext):
 # ---------- Étape 2 : âge ----------
 @router.message(Inscription.age)
 async def saisir_age(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(t(message.from_user.id, "age_invalide"))
+        return
     texte = message.text.strip()
     if not texte.isdigit():
         await message.answer(t(message.from_user.id, "age_invalide"))
@@ -317,10 +326,14 @@ async def saisir_recherche(message: Message, state: FSMContext):
     await state.set_state(Inscription.localisation)
 
 
-# ---------- Étape 5 : localisation ----------
+# ---------- Étape 5 : localisation (GPS uniquement) ----------
 @router.message(Inscription.localisation, F.location)
 async def saisir_localisation_gps(message: Message, state: FSMContext):
-    await state.update_data(lat=message.location.latitude, lon=message.location.longitude, ville=None)
+    from database import ville_depuis_gps
+    lat = message.location.latitude
+    lon = message.location.longitude
+    ville = ville_depuis_gps(lat, lon)
+    await state.update_data(lat=lat, lon=lon, ville=ville)
     await message.answer(
         progression(message.from_user.id, 6) + t(message.from_user.id, "localisation_gps_ok"),
         reply_markup=clavier_precedent(message.from_user.id),
@@ -329,22 +342,22 @@ async def saisir_localisation_gps(message: Message, state: FSMContext):
 
 
 @router.message(Inscription.localisation, F.text)
-async def saisir_localisation_ville(message: Message, state: FSMContext):
-    ville = message.text.strip()
-    if len(ville) < 2:
-        await message.answer(t(message.from_user.id, "ville_trop_courte"))
+async def localisation_pas_de_texte(message: Message, state: FSMContext):
+    # Le bouton ⬅️ Précédent est géré par un autre handler, on l'ignore ici
+    if "⬅️" in (message.text or ""):
         return
-    await state.update_data(ville=ville, lat=None, lon=None)
     await message.answer(
-        progression(message.from_user.id, 6) + t(message.from_user.id, "localisation_ville_ok"),
-        reply_markup=clavier_precedent(message.from_user.id),
+        t(message.from_user.id, "localisation_gps_obligatoire"),
+        reply_markup=clavier_localisation(message.from_user.id),
     )
-    await state.set_state(Inscription.bio)
 
 
 # ---------- Étape 6 : bio ----------
 @router.message(Inscription.bio)
 async def saisir_bio(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(t(message.from_user.id, "bio_attendue"))
+        return
     bio = message.text.strip()
     if len(bio) > config.BIO_MAX:
         await message.answer(t(message.from_user.id, "bio_trop_longue", max=config.BIO_MAX))
@@ -394,14 +407,59 @@ async def recevoir_video(message: Message, state: FSMContext):
     )
 
 
-# ---------- Fin : enregistrement + récapitulatif (reconnu par ✅) ----------
+# ---------- Passage des médias à l'étape téléphone (reconnu par ✅) ----------
 @router.message(Inscription.medias, F.text.contains("✅"))
-async def finir_inscription(message: Message, state: FSMContext):
+async def medias_vers_telephone(message: Message, state: FSMContext):
     data = await state.get_data()
     medias = data.get("medias", [])
     if len(medias) == 0:
         await message.answer(t(message.from_user.id, "media_min"))
         return
+    await message.answer(
+        progression(message.from_user.id, 8) + t(message.from_user.id, "demande_telephone"),
+        reply_markup=clavier_telephone(message.from_user.id),
+    )
+    await state.set_state(Inscription.telephone)
+
+
+# ---------- Étape 8 : téléphone (partage du contact) ----------
+@router.message(Inscription.telephone, F.contact)
+async def recevoir_telephone(message: Message, state: FSMContext):
+    # Sécurité : on n'accepte que le numéro de l'utilisateur lui-même
+    if message.contact.user_id != message.from_user.id:
+        await message.answer(t(message.from_user.id, "telephone_obligatoire"),
+                             reply_markup=clavier_telephone(message.from_user.id))
+        return
+
+    telephone = message.contact.phone_number
+    username = message.from_user.username  # peut être None
+    await state.update_data(telephone=telephone, username=username)
+    await finir_inscription(message, state)
+
+
+@router.message(Inscription.telephone, F.text.contains("⬅️"))
+async def retour_vers_medias(message: Message, state: FSMContext):
+    await message.answer(
+        progression(message.from_user.id, 7) + t(message.from_user.id, "demande_bio"),
+        reply_markup=clavier_medias(message.from_user.id),
+    )
+    await state.set_state(Inscription.medias)
+
+
+@router.message(Inscription.telephone)
+async def telephone_pas_de_contact(message: Message, state: FSMContext):
+    if "⬅️" in (message.text or ""):
+        return
+    await message.answer(
+        t(message.from_user.id, "telephone_obligatoire"),
+        reply_markup=clavier_telephone(message.from_user.id),
+    )
+
+
+# ---------- Fin : enregistrement + récapitulatif ----------
+async def finir_inscription(message: Message, state: FSMContext):
+    data = await state.get_data()
+    medias = data.get("medias", [])
 
     enregistrer_profil(message.from_user.id, {
         "prenom": data["prenom"],
@@ -413,6 +471,8 @@ async def finir_inscription(message: Message, state: FSMContext):
         "lon": data.get("lon"),
         "bio": data["bio"],
         "medias": medias,
+        "telephone": data.get("telephone"),
+        "username": data.get("username"),
         "date_inscription": time.time(),
         "langue": get_langue(message.from_user.id),
     })

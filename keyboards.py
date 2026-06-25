@@ -181,14 +181,15 @@ def menu_parametres(user_id, en_pause=False, verifie=False):
     ])
 
 
-# def clavier_choix_langue():
-#     """Boutons inline pour changer de langue depuis les paramètres."""
-#     return InlineKeyboardMarkup(inline_keyboard=[
-#         [InlineKeyboardButton(text="🇫🇷 Français", callback_data="setlang_fr")],
-#         [InlineKeyboardButton(text="🇬🇧 English", callback_data="setlang_en")],
-#         [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru")],
-#     ])
-
+def clavier_telephone(user_id):
+    from traductions import t
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=t(user_id, "btn_partager_numero"), request_contact=True)],
+            [KeyboardButton(text=t(user_id, "btn_precedent"))],
+        ],
+        resize_keyboard=True,
+    )
 
 # ====================================================
 #   BOUTONS DU SWIPE (découverte)

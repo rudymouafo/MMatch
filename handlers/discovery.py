@@ -52,6 +52,17 @@ async def supprimer_anciens(bot, user_id, chat_id):
     messages_affiches[user_id] = []
 
 
+async def retirer_boutons(bot, user_id, chat_id):
+    """Retire les boutons de la fiche affichée (sans la supprimer), pour garder une trace."""
+    ids = messages_affiches.get(user_id, [])
+    for mid in ids:
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id, message_id=mid, reply_markup=None)
+        except Exception:
+            pass
+    messages_affiches[user_id] = []
+
+
 async def flash_emoji(message, emoji, secondes=6):
     msg = await message.answer(emoji)
 
@@ -136,7 +147,7 @@ def correspond(moi, autre):
     if not (ma_recherche_ok and sa_recherche_ok):
         return False
 
-    filtres = moi.get("filtres", {"age_min": 18, "age_max": 99, "distance": 1000})
+    filtres = moi.get("filtres", {"age_min": 18, "age_max": 99, "distance": 15})
     if not (filtres["age_min"] <= autre["age"] <= filtres["age_max"]):
         return False
 
@@ -236,18 +247,46 @@ async def envoyer_prochain(message, user_id):
     await montrer_profil(message, user_id, cible_id, profil)
 
 
+async def envoyer_contact(bot, destinataire_id, profil_autre, autre_id):
+    """Envoie au destinataire la carte de contact de l'autre personne."""
+    prenom = profil_autre.get("prenom", "")
+    username = profil_autre.get("username")
+    telephone = profil_autre.get("telephone")
+
+    if telephone:
+        vcard = None
+        if username:
+            vcard = (
+                "BEGIN:VCARD\n"
+                "VERSION:3.0\n"
+                f"FN:{prenom}\n"
+                f"TEL;TYPE=CELL:{telephone}\n"
+                f"X-TELEGRAM:@{username}\n"
+                "END:VCARD"
+            )
+        await bot.send_contact(
+            int(destinataire_id),
+            phone_number=telephone,
+            first_name=prenom,
+            vcard=vcard,
+        )
+    elif username:
+        await bot.send_message(
+            int(destinataire_id),
+            t(destinataire_id, "contact_username", prenom=prenom, username=username),
+        )
+    else:
+        await bot.send_message(
+            int(destinataire_id),
+            t(destinataire_id, "contact_indispo", prenom=prenom),
+        )
+
+
 async def notifier_match(bot, user_a_id, user_b_id):
     profil_a = get_profil(user_a_id)
     profil_b = get_profil(user_b_id)
     if not profil_a or not profil_b:
         return
-
-    bouton_a = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=t(user_a_id, "match_revoir", prenom=profil_b['prenom']), callback_data=f"revoir_{user_b_id}")
-    ]])
-    bouton_b = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text=t(user_b_id, "match_revoir", prenom=profil_a['prenom']), callback_data=f"revoir_{user_a_id}")
-    ]])
 
     texte_pour_a = t(user_a_id, "match_titre", prenom=profil_b['prenom'])
     texte_pour_b = t(user_b_id, "match_titre", prenom=profil_a['prenom'])
@@ -256,11 +295,14 @@ async def notifier_match(bot, user_a_id, user_b_id):
     await cascade_coeurs(bot, int(user_b_id))
 
     try:
-        await bot.send_message(int(user_a_id), texte_pour_a, reply_markup=bouton_a)
+        await bot.send_message(int(user_a_id), texte_pour_a)
+        await envoyer_contact(bot, user_a_id, profil_b, user_b_id)
     except Exception:
         pass
+
     try:
-        await bot.send_message(int(user_b_id), texte_pour_b, reply_markup=bouton_b)
+        await bot.send_message(int(user_b_id), texte_pour_b)
+        await envoyer_contact(bot, user_b_id, profil_a, user_a_id)
     except Exception:
         pass
 
@@ -285,6 +327,7 @@ async def passer(callback: CallbackQuery):
     enregistrer_action(user_id, cible_id, "pass")
     await callback.answer()
     await supprimer_anciens(callback.bot, user_id, callback.message.chat.id)
+    await flash_emoji(callback.message, "💔")
     await envoyer_prochain(callback.message, user_id)
 
 
@@ -322,7 +365,7 @@ async def aimer(callback: CallbackQuery):
         enregistrer_match(user_id, cible_id)
         await notifier_match(callback.bot, user_id, cible_id)
 
-    await supprimer_anciens(callback.bot, user_id, callback.message.chat.id)
+    await retirer_boutons(callback.bot, user_id, callback.message.chat.id)
     await flash_emoji(callback.message, "❤️")
     await envoyer_prochain(callback.message, user_id)
 
@@ -385,44 +428,3 @@ async def stop(callback: CallbackQuery):
     await callback.answer()
     await supprimer_anciens(callback.bot, user_id, callback.message.chat.id)
     await callback.message.answer(t(user_id, "petite_pause"), reply_markup=menu_profil(user_id))
-
-
-# ---------- Revoir le profil d'un match ----------
-@router.callback_query(F.data.startswith("revoir_"))
-async def revoir_profil(callback: CallbackQuery):
-    cible_id = callback.data.replace("revoir_", "")
-    user_id = callback.from_user.id
-    profil = get_profil(cible_id)
-    await callback.answer()
-    if not profil:
-        await callback.message.answer(t(user_id, "profil_indispo"))
-        return
-
-    lieu = profil.get("ville") or "📍"
-    badge_verif = t(user_id, "badge_verifie") if profil.get("verifie") else ""
-    badge_new = t(user_id, "badge_nouveau") if est_nouveau(profil) else ""
-    legende = (
-        f"{badge_verif}{badge_new}"
-        f"✨ <b>{profil['prenom']}</b>, {profil['age']}\n"
-        f"🌍 {lieu}\n\n"
-        f"💬 <i>{profil['bio']}</i>"
-    )
-    medias = profil.get("medias", [])
-
-    if len(medias) == 0:
-        await callback.message.answer_photo(config.PLACEHOLDER_URL, caption=legende)
-    elif len(medias) == 1:
-        m = medias[0]
-        if m["type"] == "photo":
-            await callback.message.answer_photo(m["file_id"], caption=legende)
-        else:
-            await callback.message.answer_video(m["file_id"], caption=legende)
-    else:
-        album = []
-        for i, m in enumerate(medias):
-            cap = legende if i == 0 else None
-            if m["type"] == "photo":
-                album.append(InputMediaPhoto(media=m["file_id"], caption=cap))
-            else:
-                album.append(InputMediaVideo(media=m["file_id"], caption=cap))
-        await callback.message.answer_media_group(album)

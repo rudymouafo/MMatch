@@ -158,6 +158,9 @@ async def edit_prenom(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Modification.prenom)
 async def set_prenom(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(t(message.from_user.id, "prenom_court", min=config.PRENOM_MIN, max=config.PRENOM_MAX))
+        return
     prenom = message.text.strip()
     if len(prenom) < config.PRENOM_MIN or len(prenom) > config.PRENOM_MAX:
         await message.answer(t(message.from_user.id, "prenom_court", min=config.PRENOM_MIN, max=config.PRENOM_MAX))
@@ -177,6 +180,9 @@ async def edit_age(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Modification.age)
 async def set_age(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(t(message.from_user.id, "age_chiffres"))
+        return
     texte = message.text.strip()
     if not texte.isdigit():
         await message.answer(t(message.from_user.id, "age_chiffres"))
@@ -220,7 +226,7 @@ async def set_recherche(callback: CallbackQuery):
     await apercu_apres_modif(callback.message, callback.from_user.id)
 
 
-# ---------- Localisation ----------
+# ---------- Localisation (GPS uniquement) ----------
 @router.callback_query(F.data == "edit_localisation")
 async def edit_localisation(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -233,26 +239,24 @@ async def edit_localisation(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Modification.localisation, F.location)
 async def set_localisation_gps(message: Message, state: FSMContext):
-    modifier_champ(message.from_user.id, "lat", message.location.latitude)
-    modifier_champ(message.from_user.id, "lon", message.location.longitude)
-    modifier_champ(message.from_user.id, "ville", None)
+    from database import ville_depuis_gps
+    lat = message.location.latitude
+    lon = message.location.longitude
+    ville = ville_depuis_gps(lat, lon)
+    modifier_champ(message.from_user.id, "lat", lat)
+    modifier_champ(message.from_user.id, "lon", lon)
+    modifier_champ(message.from_user.id, "ville", ville)
     await state.clear()
     await message.answer(t(message.from_user.id, "loc_maj"), reply_markup=ReplyKeyboardRemove())
     await apercu_apres_modif(message, message.from_user.id)
 
 
 @router.message(Modification.localisation, F.text)
-async def set_localisation_ville(message: Message, state: FSMContext):
-    ville = message.text.strip()
-    if len(ville) < 2:
-        await message.answer(t(message.from_user.id, "ville_trop_courte"))
-        return
-    modifier_champ(message.from_user.id, "ville", ville)
-    modifier_champ(message.from_user.id, "lat", None)
-    modifier_champ(message.from_user.id, "lon", None)
-    await state.clear()
-    await message.answer(t(message.from_user.id, "loc_maj_ville"), reply_markup=ReplyKeyboardRemove())
-    await apercu_apres_modif(message, message.from_user.id)
+async def loc_modif_pas_de_texte(message: Message, state: FSMContext):
+    await message.answer(
+        t(message.from_user.id, "localisation_gps_obligatoire"),
+        reply_markup=clavier_localisation(message.from_user.id),
+    )
 
 
 # ---------- Bio ----------
@@ -265,6 +269,9 @@ async def edit_bio(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Modification.bio)
 async def set_bio(message: Message, state: FSMContext):
+    if not message.text:
+        await message.answer(t(message.from_user.id, "demande_nouvelle_bio"))
+        return
     bio = message.text.strip()
     if len(bio) > config.BIO_MAX:
         await message.answer(t(message.from_user.id, "bio_trop_longue", max=config.BIO_MAX))

@@ -778,6 +778,59 @@ TRADUCTIONS = {
         "ru": "✅ <b>Язык обновлён!</b>\n\nТеперь M_Match говорит с тобой по-русски 🇷🇺",
     },
 
+    "localisation_gps_obligatoire": {
+        "fr": "📍 Pour continuer, appuie sur le bouton <b>« Partager ma position »</b> juste en dessous 👇\n\n<i>C'est nécessaire pour te montrer des profils proches de toi.</i>",
+        "en": "📍 To continue, tap the <b>« Share my location »</b> button just below 👇\n\n<i>This is needed to show you profiles near you.</i>",
+        "ru": "📍 Чтобы продолжить, нажми кнопку <b>« Поделиться местоположением »</b> чуть ниже 👇\n\n<i>Это нужно, чтобы показывать тебе профили рядом с тобой.</i>",
+    },
+    "bio_attendue": {
+        "fr": "✍️ Écris quelques mots sur toi pour ta bio 🌸\n<i>(juste du texte, pas de photo ici).</i>",
+        "en": "✍️ Write a few words about yourself for your bio 🌸\n<i>(text only, no photo here).</i>",
+        "ru": "✍️ Напиши пару слов о себе для описания 🌸\n<i>(только текст, без фото).</i>",
+    },
+    # ---------- Étape numéro / vérification ----------
+    "btn_partager_numero": {
+        "fr": "📱 Partager mon numéro",
+        "en": "📱 Share my number",
+        "ru": "📱 Поделиться номером",
+    },
+    "demande_telephone": {
+        "fr": "📱 <b>Dernière étape : vérification</b>\n\nPour la sécurité de tous, partage ton numéro de téléphone en appuyant sur le bouton ci-dessous 👇\n\n<i>Ton numéro reste confidentiel et ne sera jamais affiché sur ton profil.</i>",
+        "en": "📱 <b>Last step: verification</b>\n\nFor everyone's safety, share your phone number by tapping the button below 👇\n\n<i>Your number stays private and will never be shown on your profile.</i>",
+        "ru": "📱 <b>Последний шаг: проверка</b>\n\nДля безопасности всех поделись своим номером телефона, нажав кнопку ниже 👇\n\n<i>Твой номер останется конфиденциальным и никогда не появится в профиле.</i>",
+    },
+    "telephone_obligatoire": {
+        "fr": "📱 Pour finaliser ton inscription, appuie sur le bouton <b>« Partager mon numéro »</b> ci-dessous 👇\n\n<i>C'est une étape obligatoire pour la sécurité.</i>",
+        "en": "📱 To complete your registration, tap the <b>« Share my number »</b> button below 👇\n\n<i>This is a required step for safety.</i>",
+        "ru": "📱 Чтобы завершить регистрацию, нажми кнопку <b>« Поделиться номером »</b> ниже 👇\n\n<i>Это обязательный шаг для безопасности.</i>",
+    },
+    # ---------- Échange de contacts au match ----------
+    "contact_username": {
+        "fr": "📲 Tu peux contacter <b>{prenom}</b> directement sur Telegram : @{username}\n\nLance-toi… le premier message est souvent le plus beau ! ✨",
+        "en": "📲 You can contact <b>{prenom}</b> directly on Telegram: @{username}\n\nGo for it… the first message is often the sweetest! ✨",
+        "ru": "📲 Ты можешь связаться с <b>{prenom}</b> напрямую в Telegram: @{username}\n\nСделай шаг… первое сообщение часто самое приятное! ✨",
+    },
+    "contact_numero": {
+        "fr": "📲 Voici le contact de <b>{prenom}</b> 👆\nAppuie dessus pour démarrer la conversation sur Telegram ! ✨",
+        "en": "📲 Here is <b>{prenom}</b>'s contact 👆\nTap it to start the conversation on Telegram! ✨",
+        "ru": "📲 Вот контакт <b>{prenom}</b> 👆\nНажми, чтобы начать разговор в Telegram! ✨",
+    },
+    "contact_indispo": {
+        "fr": "💞 Tu as matché avec <b>{prenom}</b> ! Malheureusement, son contact n'est pas disponible pour le moment. 🌸",
+        "en": "💞 You matched with <b>{prenom}</b>! Unfortunately, their contact isn't available right now. 🌸",
+        "ru": "💞 У тебя совпадение с <b>{prenom}</b>! К сожалению, их контакт сейчас недоступен. 🌸",
+    },
+    "match_titre": {
+        "fr": "💞✨ <b>C'EST UN MATCH !</b> ✨💞\n\nToi et <b>{prenom}</b> vous êtes plu·e·s mutuellement ! 🥰\n\nVoici son contact juste en dessous 👇\nLance-toi… le premier message est souvent le plus beau ! 💌",
+        "en": "💞✨ <b>IT'S A MATCH!</b> ✨💞\n\nYou and <b>{prenom}</b> liked each other! 🥰\n\nHere is their contact just below 👇\nGo for it… the first message is often the sweetest! 💌",
+        "ru": "💞✨ <b>ЭТО СОВПАДЕНИЕ!</b> ✨💞\n\nТы и <b>{prenom}</b> понравились друг другу! 🥰\n\nВот их контакт чуть ниже 👇\nСделай шаг… первое сообщение часто самое приятное! 💌",
+    },
+    "btn_voir_contact": {
+        "fr": "📲 Contacter {prenom}",
+        "en": "📲 Contact {prenom}",
+        "ru": "📲 Связаться с {prenom}",
+    },
+
 
 }
 

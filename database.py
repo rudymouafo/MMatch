@@ -8,6 +8,34 @@ import datetime
 ACTIONS_FILE = "actions.json"
 MATCHES_FILE = "matches.json"
 
+from geopy.geocoders import Nominatim
+
+_geolocateur = Nominatim(user_agent="m_match_bot")
+
+
+def ville_depuis_gps(lat, lon):
+    """Transforme des coordonnées GPS en nom de quartier ou ville."""
+    if lat is None or lon is None:
+        return None
+    try:
+        lieu = _geolocateur.reverse((lat, lon), language="fr", timeout=10)
+        if not lieu or not lieu.raw.get("address"):
+            return None
+        adr = lieu.raw["address"]
+        # On cherche d'abord le quartier, sinon la ville, sinon la région
+        return (
+            adr.get("suburb")
+            or adr.get("neighbourhood")
+            or adr.get("city_district")
+            or adr.get("city")
+            or adr.get("town")
+            or adr.get("village")
+            or adr.get("municipality")
+            or adr.get("county")
+            or adr.get("state")
+        )
+    except Exception:
+        return None
 
 def charger_profils():
     if not os.path.exists(DB_FILE):
@@ -205,7 +233,7 @@ def get_filtres(user_id):
     return profil.get("filtres", {
         "age_min": 18,
         "age_max": 99,
-        "distance": 1000,
+        "distance": 15,
     })
 
 

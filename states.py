@@ -3,6 +3,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class Inscription(StatesGroup):
+    langue = State()
     cgu = State()
     prenom = State()
     age = State()
@@ -11,7 +12,7 @@ class Inscription(StatesGroup):
     localisation = State()
     bio = State()
     medias = State()
-    langue = State()
+    telephone = State()
 
 
 class Modification(StatesGroup):
