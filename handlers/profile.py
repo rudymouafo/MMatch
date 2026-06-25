@@ -10,12 +10,13 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 import config
-from states import Modification
+from states import Modification, Navigation
 from traductions import t
 from database import get_profil, modifier_champ, stats_utilisateur
 from keyboards import (
     menu_profil,
     menu_modifier,
+    menu_principal,
     inline_genre,
     inline_recherche,
     clavier_localisation,
@@ -39,17 +40,16 @@ def texte_profil(user_id, profil):
 
 
 # ---------- Afficher le profil (médias + fiche) ----------
-async def envoyer_profil(message, user_id, profil, avec_menu=False):
+async def envoyer_profil(message, user_id, profil):
     legende = texte_profil(user_id, profil)
     medias = profil.get("medias", [])
-    clavier = menu_modifier(user_id) if avec_menu else None
 
     if len(medias) == 1:
         m = medias[0]
         if m["type"] == "photo":
-            await message.answer_photo(m["file_id"], caption=legende, reply_markup=clavier)
+            await message.answer_photo(m["file_id"], caption=legende)
         else:
-            await message.answer_video(m["file_id"], caption=legende, reply_markup=clavier)
+            await message.answer_video(m["file_id"], caption=legende)
     elif len(medias) > 1:
         album = []
         for i, m in enumerate(medias):
@@ -59,100 +59,103 @@ async def envoyer_profil(message, user_id, profil, avec_menu=False):
             else:
                 album.append(InputMediaVideo(media=m["file_id"], caption=cap))
         await message.answer_media_group(album)
-        if avec_menu:
-            await message.answer(t(user_id, "retoucher_autre"), reply_markup=menu_modifier(user_id))
     else:
-        await message.answer(legende, reply_markup=clavier)
+        await message.answer(legende)
 
 
 # ---------- Afficher l'aperçu après une modification ----------
 async def apercu_apres_modif(message, user_id):
     profil = get_profil(user_id)
     await message.answer(t(user_id, "profil_maj"))
-    await envoyer_profil(message, user_id, profil, avec_menu=True)
+    await envoyer_profil(message, user_id, profil)
+    await message.answer(t(user_id, "retoucher_autre"), reply_markup=menu_modifier(user_id))
 
 
-# ---------- Annuler une modification en cours ----------
-@router.message(Command("annuler", "cancel"))
-async def annuler_modification(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(t(message.from_user.id, "pas_de_changement"), reply_markup=ReplyKeyboardRemove())
-    await message.answer(t(message.from_user.id, "voici_ton_menu"), reply_markup=menu_modifier(message.from_user.id))
-
-
-# ---------- Commande /profil ou /profile ----------
-@router.message(Command("profil", "profile"))
-async def commande_profil(message: Message):
-    profil = get_profil(message.from_user.id)
+# ====================================================
+#   OUVERTURE DU MENU PROFIL (depuis le menu permanent 👤)
+# ====================================================
+async def ouvrir_menu_profil(message, user_id, state):
+    profil = get_profil(user_id)
     if not profil:
-        await message.answer(t(message.from_user.id, "pas_de_profil"))
+        await message.answer(t(user_id, "pas_de_profil"))
         return
     await message.answer(
-        t(message.from_user.id, "espace_profil", prenom=profil['prenom']),
-        reply_markup=menu_profil(message.from_user.id),
+        t(user_id, "espace_profil", prenom=profil['prenom']),
+        reply_markup=menu_profil(user_id),
     )
+    await state.set_state(Navigation.menu_profil)
 
 
-# ---------- Bouton : Voir mon profil ----------
-@router.callback_query(F.data == "voir_profil")
-async def voir_profil(callback: CallbackQuery):
-    user_id = callback.from_user.id
+@router.message(Command("profil", "profile"))
+async def commande_profil(message: Message, state: FSMContext):
+    await ouvrir_menu_profil(message, message.from_user.id, state)
+
+
+# ====================================================
+#   MENU PROFIL : boutons reconnus par icône
+# ====================================================
+
+# ---------- 👁 Voir mon profil ----------
+@router.message(Navigation.menu_profil, F.text.contains("👁"))
+async def voir_profil(message: Message):
+    user_id = message.from_user.id
     profil = get_profil(user_id)
-    await callback.answer()
     if not profil:
-        await callback.message.answer(t(user_id, "profil_aucun"))
+        await message.answer(t(user_id, "profil_aucun"))
         return
-    await callback.message.answer(t(user_id, "voici_profil"))
-    await envoyer_profil(callback.message, user_id, profil)
+    await message.answer(t(user_id, "voici_profil"))
+    await envoyer_profil(message, user_id, profil)
 
 
-# ---------- Bouton : Modifier mon profil ----------
-@router.callback_query(F.data == "modifier_profil")
-async def modifier_profil(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.answer(
-        t(callback.from_user.id, "que_retoucher"),
-        reply_markup=menu_modifier(callback.from_user.id),
-    )
-
-
-# ---------- Mes statistiques perso ----------
-@router.callback_query(F.data == "mes_stats")
-async def mes_stats(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    await callback.answer()
+# ---------- 📊 Mes statistiques ----------
+@router.message(Navigation.menu_profil, F.text.contains("📊"))
+async def mes_stats(message: Message):
+    user_id = message.from_user.id
     profil = get_profil(user_id)
     if not profil:
-        await callback.message.answer(t(user_id, "pas_de_profil"))
+        await message.answer(t(user_id, "pas_de_profil"))
         return
     stats = stats_utilisateur(user_id)
     statut = t(user_id, "statut_verifie") if profil.get("verifie") else t(user_id, "statut_non_verifie")
-    await callback.message.answer(
+    await message.answer(
         t(user_id, "stats_titre", likes=stats['likes_recus'], matchs=stats['matchs'], statut=statut)
     )
 
 
-# ---------- Bouton : Retour au menu ----------
-@router.callback_query(F.data == "retour_menu")
-async def retour_menu(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    profil = get_profil(user_id)
-    await callback.answer()
-    await callback.message.answer(
-        t(user_id, "espace_profil", prenom=profil['prenom']),
-        reply_markup=menu_profil(user_id),
+# ---------- 🛠️ Modifier mon profil ----------
+@router.message(Navigation.menu_profil, F.text.contains("🛠️"))
+async def modifier_profil(message: Message, state: FSMContext):
+    await message.answer(
+        t(message.from_user.id, "que_retoucher"),
+        reply_markup=menu_modifier(message.from_user.id),
+    )
+    await state.set_state(Navigation.menu_modifier)
+
+
+# ---------- 🔙 Retour (depuis menu profil → menu principal) ----------
+@router.message(Navigation.menu_profil, F.text.contains("🔙"))
+async def retour_depuis_profil(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        t(message.from_user.id, "voici_ton_menu"),
+        reply_markup=menu_principal(message.from_user.id),
     )
 
 
 # ====================================================
-#   MODIFICATION DES CHAMPS
+#   MENU MODIFIER : boutons reconnus par icône
 # ====================================================
 
-# ---------- Prénom ----------
-@router.callback_query(F.data == "edit_prenom")
-async def edit_prenom(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer(t(callback.from_user.id, "demande_nouveau_prenom"))
+# ---------- 🔙 Retour (depuis menu modifier → menu profil) ----------
+@router.message(Navigation.menu_modifier, F.text.contains("🔙"))
+async def retour_depuis_modifier(message: Message, state: FSMContext):
+    await ouvrir_menu_profil(message, message.from_user.id, state)
+
+
+# ---------- ✏️ Prénom ----------
+@router.message(Navigation.menu_modifier, F.text.contains("✏️"))
+async def edit_prenom(message: Message, state: FSMContext):
+    await message.answer(t(message.from_user.id, "demande_nouveau_prenom"), reply_markup=ReplyKeyboardRemove())
     await state.set_state(Modification.prenom)
 
 
@@ -166,15 +169,14 @@ async def set_prenom(message: Message, state: FSMContext):
         await message.answer(t(message.from_user.id, "prenom_court", min=config.PRENOM_MIN, max=config.PRENOM_MAX))
         return
     modifier_champ(message.from_user.id, "prenom", prenom)
-    await state.clear()
+    await state.set_state(Navigation.menu_modifier)
     await apercu_apres_modif(message, message.from_user.id)
 
 
-# ---------- Âge ----------
-@router.callback_query(F.data == "edit_age")
-async def edit_age(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer(t(callback.from_user.id, "demande_nouvel_age"))
+# ---------- 🎂 Âge ----------
+@router.message(Navigation.menu_modifier, F.text.contains("🎂"))
+async def edit_age(message: Message, state: FSMContext):
+    await message.answer(t(message.from_user.id, "demande_nouvel_age"), reply_markup=ReplyKeyboardRemove())
     await state.set_state(Modification.age)
 
 
@@ -192,47 +194,46 @@ async def set_age(message: Message, state: FSMContext):
         await message.answer(t(message.from_user.id, "age_surprenant", min=config.AGE_MIN, max=config.AGE_MAX))
         return
     modifier_champ(message.from_user.id, "age", age)
-    await state.clear()
+    await state.set_state(Navigation.menu_modifier)
     await apercu_apres_modif(message, message.from_user.id)
 
 
-# ---------- Genre ----------
-@router.callback_query(F.data == "edit_genre")
-async def edit_genre(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.answer(t(callback.from_user.id, "demande_nouveau_genre"), reply_markup=inline_genre(callback.from_user.id))
+# ---------- 💫 Genre ----------
+@router.message(Navigation.menu_modifier, F.text.contains("💫"))
+async def edit_genre(message: Message):
+    await message.answer(t(message.from_user.id, "demande_nouveau_genre"), reply_markup=inline_genre(message.from_user.id))
 
 
 @router.callback_query(F.data.startswith("set_genre_"))
-async def set_genre(callback: CallbackQuery):
+async def set_genre(callback: CallbackQuery, state: FSMContext):
     valeur = callback.data.replace("set_genre_", "")
     modifier_champ(callback.from_user.id, "genre", valeur)
     await callback.answer(t(callback.from_user.id, "cest_note"))
+    await state.set_state(Navigation.menu_modifier)
     await apercu_apres_modif(callback.message, callback.from_user.id)
 
 
-# ---------- Recherche ----------
-@router.callback_query(F.data == "edit_recherche")
-async def edit_recherche(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.answer(t(callback.from_user.id, "demande_nouvelle_recherche"), reply_markup=inline_recherche(callback.from_user.id))
+# ---------- 💘 Recherche ----------
+@router.message(Navigation.menu_modifier, F.text.contains("💘"))
+async def edit_recherche(message: Message):
+    await message.answer(t(message.from_user.id, "demande_nouvelle_recherche"), reply_markup=inline_recherche(message.from_user.id))
 
 
 @router.callback_query(F.data.startswith("set_recherche_"))
-async def set_recherche(callback: CallbackQuery):
+async def set_recherche(callback: CallbackQuery, state: FSMContext):
     valeur = callback.data.replace("set_recherche_", "")
     modifier_champ(callback.from_user.id, "recherche", valeur)
     await callback.answer(t(callback.from_user.id, "cest_note"))
+    await state.set_state(Navigation.menu_modifier)
     await apercu_apres_modif(callback.message, callback.from_user.id)
 
 
-# ---------- Localisation (GPS uniquement) ----------
-@router.callback_query(F.data == "edit_localisation")
-async def edit_localisation(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer(
-        t(callback.from_user.id, "demande_nouvelle_loc"),
-        reply_markup=clavier_localisation(callback.from_user.id),
+# ---------- 🌍 Localisation ----------
+@router.message(Navigation.menu_modifier, F.text.contains("🌍"))
+async def edit_localisation(message: Message, state: FSMContext):
+    await message.answer(
+        t(message.from_user.id, "demande_nouvelle_loc"),
+        reply_markup=clavier_localisation(message.from_user.id),
     )
     await state.set_state(Modification.localisation)
 
@@ -246,8 +247,8 @@ async def set_localisation_gps(message: Message, state: FSMContext):
     modifier_champ(message.from_user.id, "lat", lat)
     modifier_champ(message.from_user.id, "lon", lon)
     modifier_champ(message.from_user.id, "ville", ville)
-    await state.clear()
     await message.answer(t(message.from_user.id, "loc_maj"), reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Navigation.menu_modifier)
     await apercu_apres_modif(message, message.from_user.id)
 
 
@@ -259,11 +260,10 @@ async def loc_modif_pas_de_texte(message: Message, state: FSMContext):
     )
 
 
-# ---------- Bio ----------
-@router.callback_query(F.data == "edit_bio")
-async def edit_bio(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer(t(callback.from_user.id, "demande_nouvelle_bio"))
+# ---------- 💬 Bio ----------
+@router.message(Navigation.menu_modifier, F.text.contains("💬"))
+async def edit_bio(message: Message, state: FSMContext):
+    await message.answer(t(message.from_user.id, "demande_nouvelle_bio"), reply_markup=ReplyKeyboardRemove())
     await state.set_state(Modification.bio)
 
 
@@ -277,18 +277,17 @@ async def set_bio(message: Message, state: FSMContext):
         await message.answer(t(message.from_user.id, "bio_trop_longue", max=config.BIO_MAX))
         return
     modifier_champ(message.from_user.id, "bio", bio)
-    await state.clear()
+    await state.set_state(Navigation.menu_modifier)
     await apercu_apres_modif(message, message.from_user.id)
 
 
-# ---------- Médias ----------
-@router.callback_query(F.data == "edit_medias")
-async def edit_medias(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
+# ---------- 📸 Médias ----------
+@router.message(Navigation.menu_modifier, F.text.contains("📸"))
+async def edit_medias(message: Message, state: FSMContext):
     await state.update_data(nouveaux_medias=[])
-    await callback.message.answer(
-        t(callback.from_user.id, "demande_nouveaux_medias", max=config.MEDIAS_MAX),
-        reply_markup=clavier_medias_fini(callback.from_user.id),
+    await message.answer(
+        t(message.from_user.id, "demande_nouveaux_medias", max=config.MEDIAS_MAX),
+        reply_markup=clavier_medias_fini(message.from_user.id),
     )
     await state.set_state(Modification.medias)
 
@@ -325,6 +324,6 @@ async def medias_fini(message: Message, state: FSMContext):
         await message.answer(t(message.from_user.id, "media_min_un"))
         return
     modifier_champ(message.from_user.id, "medias", medias)
-    await state.clear()
-    await message.answer(t(message.from_user.id, "medias_maj"), reply_markup=ReplyKeyboardRemove())
+    await state.set_state(Navigation.menu_modifier)
+    await message.answer(t(message.from_user.id, "medias_maj"))
     await apercu_apres_modif(message, message.from_user.id)

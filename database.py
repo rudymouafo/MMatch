@@ -10,6 +10,35 @@ MATCHES_FILE = "matches.json"
 
 from geopy.geocoders import Nominatim
 
+from geopy.geocoders import Nominatim
+
+_geolocateur = Nominatim(user_agent="m_match_bot")
+
+
+def ville_depuis_gps(lat, lon):
+    """Transforme des coordonnées GPS en nom de quartier ou ville."""
+    if lat is None or lon is None:
+        return None
+    try:
+        lieu = _geolocateur.reverse((lat, lon), language="fr", timeout=10)
+        if not lieu or not lieu.raw.get("address"):
+            return None
+        adr = lieu.raw["address"]
+        return (
+            adr.get("suburb")
+            or adr.get("neighbourhood")
+            or adr.get("city_district")
+            or adr.get("city")
+            or adr.get("town")
+            or adr.get("village")
+            or adr.get("municipality")
+            or adr.get("county")
+            or adr.get("state")
+        )
+    except Exception:
+        return None
+    
+
 _geolocateur = Nominatim(user_agent="m_match_bot")
 
 
@@ -71,6 +100,18 @@ def modifier_champ(user_id, champ, valeur):
     uid = str(user_id)
     if uid in profils:
         profils[uid][champ] = valeur
+        sauver_profils(profils)
+
+
+def rafraichir_username(user_id, username):
+    """Met à jour le username Telegram dans le profil s'il a changé."""
+    profils = charger_profils()
+    uid = str(user_id)
+    if uid not in profils:
+        return
+    actuel = profils[uid].get("username")
+    if actuel != username:
+        profils[uid]["username"] = username
         sauver_profils(profils)
 
 
@@ -233,7 +274,7 @@ def get_filtres(user_id):
     return profil.get("filtres", {
         "age_min": 18,
         "age_max": 99,
-        "distance": 15,
+        "distance": 15000,
     })
 
 

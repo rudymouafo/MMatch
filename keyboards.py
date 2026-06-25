@@ -74,6 +74,17 @@ def clavier_medias_fini(user_id):
     )
 
 
+def clavier_telephone(user_id):
+    from traductions import t
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=t(user_id, "btn_partager_numero"), request_contact=True)],
+            [KeyboardButton(text=t(user_id, "btn_precedent"))],
+        ],
+        resize_keyboard=True,
+    )
+
+
 # ---------- Choix de la langue (boutons du bas) ----------
 clavier_langue = ReplyKeyboardMarkup(
     keyboard=[
@@ -112,33 +123,72 @@ def menu_principal(user_id):
 
 
 # ====================================================
-#   MENUS DU PROFIL (boutons inline)
+#   MENU PROFIL (clavier du bas)
 # ====================================================
 def menu_profil(user_id):
     from traductions import t
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(user_id, "btn_decouvrir_profils"), callback_data="decouvrir")],
-        [InlineKeyboardButton(text=t(user_id, "btn_mes_matchs"), callback_data="mes_matchs")],
-        [InlineKeyboardButton(text=t(user_id, "btn_voir_profil"), callback_data="voir_profil")],
-        [InlineKeyboardButton(text=t(user_id, "btn_mes_stats"), callback_data="mes_stats")],
-        [InlineKeyboardButton(text=t(user_id, "btn_modifier_profil"), callback_data="modifier_profil")],
-    ])
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=t(user_id, "btn_voir_profil"))],
+            [KeyboardButton(text=t(user_id, "btn_mes_stats"))],
+            [KeyboardButton(text=t(user_id, "btn_modifier_profil"))],
+            [KeyboardButton(text=t(user_id, "btn_retour"))],
+        ],
+        resize_keyboard=True,
+    )
 
 
+# ====================================================
+#   MENU MODIFIER (clavier du bas)
+# ====================================================
 def menu_modifier(user_id):
     from traductions import t
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(user_id, "btn_edit_prenom"), callback_data="edit_prenom"),
-         InlineKeyboardButton(text=t(user_id, "btn_edit_age"), callback_data="edit_age")],
-        [InlineKeyboardButton(text=t(user_id, "btn_edit_genre"), callback_data="edit_genre"),
-         InlineKeyboardButton(text=t(user_id, "btn_edit_recherche"), callback_data="edit_recherche")],
-        [InlineKeyboardButton(text=t(user_id, "btn_edit_localisation"), callback_data="edit_localisation"),
-         InlineKeyboardButton(text=t(user_id, "btn_edit_bio"), callback_data="edit_bio")],
-        [InlineKeyboardButton(text=t(user_id, "btn_edit_medias"), callback_data="edit_medias")],
-        [InlineKeyboardButton(text=t(user_id, "btn_retour"), callback_data="retour_menu")],
-    ])
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=t(user_id, "btn_edit_prenom")),
+             KeyboardButton(text=t(user_id, "btn_edit_age"))],
+            [KeyboardButton(text=t(user_id, "btn_edit_genre")),
+             KeyboardButton(text=t(user_id, "btn_edit_recherche"))],
+            [KeyboardButton(text=t(user_id, "btn_edit_localisation")),
+             KeyboardButton(text=t(user_id, "btn_edit_bio"))],
+            [KeyboardButton(text=t(user_id, "btn_edit_medias"))],
+            [KeyboardButton(text=t(user_id, "btn_retour"))],
+        ],
+        resize_keyboard=True,
+    )
 
 
+# ====================================================
+#   MENU PARAMÈTRES (clavier du bas, s'adapte à pause + vérifié)
+# ====================================================
+def menu_parametres(user_id, en_pause=False, verifie=False):
+    from traductions import t
+    if en_pause:
+        bouton_pause = KeyboardButton(text=t(user_id, "btn_pause_off"))
+    else:
+        bouton_pause = KeyboardButton(text=t(user_id, "btn_pause_on"))
+
+    if verifie:
+        bouton_verif = KeyboardButton(text=t(user_id, "btn_deja_verifie"))
+    else:
+        bouton_verif = KeyboardButton(text=t(user_id, "btn_verifier"))
+
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=t(user_id, "btn_filtres"))],
+            [KeyboardButton(text=t(user_id, "btn_langue"))],
+            [bouton_verif],
+            [bouton_pause],
+            [KeyboardButton(text=t(user_id, "btn_supprimer"))],
+            [KeyboardButton(text=t(user_id, "btn_retour"))],
+        ],
+        resize_keyboard=True,
+    )
+
+
+# ====================================================
+#   CHOIX GENRE / RECHERCHE (inline, pour modification)
+# ====================================================
 def inline_genre(user_id):
     from traductions import t
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -158,41 +208,7 @@ def inline_recherche(user_id):
 
 
 # ====================================================
-#   MENU PARAMÈTRES (s'adapte à pause + vérifié)
-# ====================================================
-def menu_parametres(user_id, en_pause=False, verifie=False):
-    from traductions import t
-    if en_pause:
-        bouton_pause = InlineKeyboardButton(text=t(user_id, "btn_pause_off"), callback_data="pause")
-    else:
-        bouton_pause = InlineKeyboardButton(text=t(user_id, "btn_pause_on"), callback_data="pause")
-
-    if verifie:
-        bouton_verif = InlineKeyboardButton(text=t(user_id, "btn_deja_verifie"), callback_data="deja_verifie")
-    else:
-        bouton_verif = InlineKeyboardButton(text=t(user_id, "btn_verifier"), callback_data="verifier")
-
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=t(user_id, "btn_filtres"), callback_data="filtres")],
-        [InlineKeyboardButton(text=t(user_id, "btn_langue"), callback_data="changer_langue")],
-        [bouton_verif],
-        [bouton_pause],
-        [InlineKeyboardButton(text=t(user_id, "btn_supprimer"), callback_data="supprimer")],
-    ])
-
-
-def clavier_telephone(user_id):
-    from traductions import t
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=t(user_id, "btn_partager_numero"), request_contact=True)],
-            [KeyboardButton(text=t(user_id, "btn_precedent"))],
-        ],
-        resize_keyboard=True,
-    )
-
-# ====================================================
-#   BOUTONS DU SWIPE (découverte)
+#   BOUTONS DU SWIPE (découverte) — restent inline
 # ====================================================
 def clavier_swipe(user_id, cible_id):
     from traductions import t

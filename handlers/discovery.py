@@ -35,7 +35,7 @@ from database import (
     consommer_like,
 )
 from traductions import t
-from keyboards import clavier_swipe, menu_profil
+from keyboards import clavier_swipe, menu_principal
 
 router = Router()
 
@@ -147,7 +147,7 @@ def correspond(moi, autre):
     if not (ma_recherche_ok and sa_recherche_ok):
         return False
 
-    filtres = moi.get("filtres", {"age_min": 18, "age_max": 99, "distance": 15})
+    filtres = moi.get("filtres", {"age_min": 18, "age_max": 99, "distance": 15000})
     if not (filtres["age_min"] <= autre["age"] <= filtres["age_max"]):
         return False
 
@@ -241,7 +241,7 @@ async def envoyer_prochain(message, user_id):
     if not profil:
         await message.answer(
             t(user_id, "plus_de_profils"),
-            reply_markup=menu_profil(user_id),
+            reply_markup=menu_principal(user_id),
         )
         return
     await montrer_profil(message, user_id, cible_id, profil)
@@ -253,17 +253,16 @@ async def envoyer_contact(bot, destinataire_id, profil_autre, autre_id):
     username = profil_autre.get("username")
 
     if username:
-        # Belle carte avec lien cliquable vers le compte Telegram (numéro jamais montré)
         await bot.send_message(
             int(destinataire_id),
             t(destinataire_id, "carte_contact", prenom=prenom, username=username),
         )
     else:
-        # Pas de username : on ne peut pas donner de contact sans exposer le numéro
         await bot.send_message(
             int(destinataire_id),
             t(destinataire_id, "contact_sans_username", prenom=prenom),
         )
+
 
 async def notifier_match(bot, user_a_id, user_b_id):
     profil_a = get_profil(user_a_id)
@@ -291,15 +290,9 @@ async def notifier_match(bot, user_a_id, user_b_id):
 
 
 # ---------- Lancer la découverte ----------
-@router.message(Command("decouvrir"))
+@router.message(Command("discover"))
 async def cmd_decouvrir(message: Message):
     await envoyer_prochain(message, message.from_user.id)
-
-
-@router.callback_query(F.data == "decouvrir")
-async def cb_decouvrir(callback: CallbackQuery):
-    await callback.answer()
-    await envoyer_prochain(callback.message, callback.from_user.id)
 
 
 # ---------- Passer ----------
@@ -325,7 +318,7 @@ async def aimer(callback: CallbackQuery):
         await callback.answer()
         await callback.message.answer(
             t(user_id, "limite_likes"),
-            reply_markup=menu_profil(user_id),
+            reply_markup=menu_principal(user_id),
         )
         return
 
@@ -410,4 +403,4 @@ async def stop(callback: CallbackQuery):
     user_id = callback.from_user.id
     await callback.answer()
     await supprimer_anciens(callback.bot, user_id, callback.message.chat.id)
-    await callback.message.answer(t(user_id, "petite_pause"), reply_markup=menu_profil(user_id))
+    await callback.message.answer(t(user_id, "petite_pause"), reply_markup=menu_principal(user_id))

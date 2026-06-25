@@ -38,3 +38,8 @@ class Verification(StatesGroup):
 class ChangementLangue(StatesGroup):
     choix = State()
 
+class Navigation(StatesGroup):
+    menu_profil = State()
+    menu_modifier = State()
+    menu_parametres = State()
+

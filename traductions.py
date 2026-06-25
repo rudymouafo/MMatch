@@ -239,10 +239,10 @@ TRADUCTIONS = {
     "btn_mes_matchs": {"fr": "💞 Mes matchs", "en": "💞 My matches", "ru": "💞 Мои совпадения"},
     "btn_voir_profil": {"fr": "👁 Voir mon profil", "en": "👁 View my profile", "ru": "👁 Посмотреть мой профиль"},
     "btn_mes_stats": {"fr": "📊 Mes statistiques", "en": "📊 My stats", "ru": "📊 Моя статистика"},
-    "btn_modifier_profil": {"fr": "✏️ Modifier mon profil", "en": "✏️ Edit my profile", "ru": "✏️ Изменить профиль"},
+    "btn_modifier_profil": {"fr": "🛠️ Modifier mon profil", "en": "🛠️ Edit my profile", "ru": "🛠️ Изменить профиль"},
 
     # ---------- Boutons du menu paramètres (inline) ----------
-    "btn_filtres": {"fr": "⚙️ Mes filtres de recherche", "en": "⚙️ My search filters", "ru": "⚙️ Мои фильтры поиска"},
+    "btn_filtres": {"fr": "🎯 Mes filtres de recherche", "en": "🎯 My search filters", "ru": "🎯 Мои фильтры поиска"},
     "btn_verifier": {"fr": "🛡️ Vérifier mon profil", "en": "🛡️ Verify my profile", "ru": "🛡️ Подтвердить профиль"},
     "btn_deja_verifie": {"fr": "✅ Profil vérifié", "en": "✅ Verified profile", "ru": "✅ Профиль подтверждён"},
     "btn_pause_on": {"fr": "⏸️ Mettre mon profil en pause", "en": "⏸️ Pause my profile", "ru": "⏸️ Поставить профиль на паузу"},
@@ -766,7 +766,7 @@ TRADUCTIONS = {
     "sw_bloquer": {"fr": "🚫 Bloquer", "en": "🚫 Block", "ru": "🚫 Заблокировать"},
     "sw_arreter": {"fr": "🔙 Arrêter", "en": "🔙 Stop", "ru": "🔙 Стоп"},
     # ---------- Changement de langue ----------
-    "btn_langue": {"fr": "🌍 Langue", "en": "🌍 Language", "ru": "🌍 Язык"},
+    "btn_langue": {"fr": "🗣️ Langue", "en": "🗣️ Language", "ru": "🗣️ Язык"},
     "changer_langue": {
         "fr": "🌍 <b>Choisis ta langue</b>\n\nSélectionne la langue de M_Match ci-dessous 👇",
         "en": "🌍 <b>Choose your language</b>\n\nSelect M_Match's language below 👇",

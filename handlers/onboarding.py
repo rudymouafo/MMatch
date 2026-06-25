@@ -141,26 +141,15 @@ async def raccourci_matchs(message: Message, state: FSMContext):
 @router.message(F.text.contains("👤"))
 async def raccourci_profil(message: Message, state: FSMContext):
     await state.clear()
-    from database import get_profil
-    profil = get_profil(message.from_user.id)
-    if not profil:
-        await message.answer(t(message.from_user.id, "pas_de_profil"))
-        return
-    await message.answer(
-        t(message.from_user.id, "espace_profil", prenom=profil['prenom']),
-        reply_markup=menu_profil(message.from_user.id),
-    )
+    from handlers.profile import ouvrir_menu_profil
+    await ouvrir_menu_profil(message, message.from_user.id, state)
 
 
 @router.message(F.text.contains("⚙️"))
 async def raccourci_parametres(message: Message, state: FSMContext):
     await state.clear()
-    from keyboards import menu_parametres
-    from database import est_en_pause, est_verifie
-    await message.answer(
-        t(message.from_user.id, "parametres_titre"),
-        reply_markup=menu_parametres(message.from_user.id, est_en_pause(message.from_user.id), est_verifie(message.from_user.id)),
-    )
+    from handlers.settings import ouvrir_menu_parametres
+    await ouvrir_menu_parametres(message, message.from_user.id, state)
 
 
 # ---------- Annuler ----------
