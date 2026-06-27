@@ -2,7 +2,12 @@ import asyncio
 
 import config
 from traductions import t
-from database import profils_a_relancer, noter_rappel, a_match_non_ouvert
+from database import (
+    profils_a_relancer,
+    noter_rappel,
+    a_match_non_ouvert,
+    likes_recus_en_attente,
+)
 
 
 async def boucle_rappels(bot):
@@ -17,8 +22,12 @@ async def boucle_rappels(bot):
                 config.RAPPEL_PAS_AVANT,
             )
             for uid, profil in a_relancer:
-                # On choisit le message selon la situation, dans la langue de la personne
-                if a_match_non_ouvert(uid):
+                # On choisit le message le plus accrocheur selon la situation
+                nb_likes = likes_recus_en_attente(uid)
+                if nb_likes > 0:
+                    # Priorité : des gens l'ont liké → ça donne envie de revenir
+                    texte = t(uid, "rappel_likes_attente", n=nb_likes)
+                elif a_match_non_ouvert(uid):
                     texte = t(uid, "rappel_match_attente_simple")
                 else:
                     texte = t(uid, "rappel_inactif_simple")

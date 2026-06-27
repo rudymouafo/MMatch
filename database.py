@@ -7,8 +7,8 @@ import datetime
 
 ACTIONS_FILE = "actions.json"
 MATCHES_FILE = "matches.json"
-
-from geopy.geocoders import Nominatim
+BLOCKS_FILE = "blocks.json"
+REPORTS_FILE = "reports.json"
 
 from geopy.geocoders import Nominatim
 
@@ -20,7 +20,7 @@ def ville_depuis_gps(lat, lon):
     if lat is None or lon is None:
         return None
     try:
-        lieu = _geolocateur.reverse((lat, lon), language="fr", timeout=10)
+        lieu = _geolocateur.reverse((lat, lon), language="fr", timeout=5)
         if not lieu or not lieu.raw.get("address"):
             return None
         adr = lieu.raw["address"]
@@ -38,34 +38,14 @@ def ville_depuis_gps(lat, lon):
     except Exception:
         return None
     
+async def ville_depuis_gps_async(lat, lon):
+    """Version non-bloquante : exécute l'appel Nominatim dans un thread séparé."""
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, ville_depuis_gps, lat, lon)
 
-_geolocateur = Nominatim(user_agent="m_match_bot")
 
-
-def ville_depuis_gps(lat, lon):
-    """Transforme des coordonnées GPS en nom de quartier ou ville."""
-    if lat is None or lon is None:
-        return None
-    try:
-        lieu = _geolocateur.reverse((lat, lon), language="fr", timeout=10)
-        if not lieu or not lieu.raw.get("address"):
-            return None
-        adr = lieu.raw["address"]
-        # On cherche d'abord le quartier, sinon la ville, sinon la région
-        return (
-            adr.get("suburb")
-            or adr.get("neighbourhood")
-            or adr.get("city_district")
-            or adr.get("city")
-            or adr.get("town")
-            or adr.get("village")
-            or adr.get("municipality")
-            or adr.get("county")
-            or adr.get("state")
-        )
-    except Exception:
-        return None
-
+# ---------- Profils ----------
 def charger_profils():
     if not os.path.exists(DB_FILE):
         return {}
@@ -115,7 +95,7 @@ def rafraichir_username(user_id, username):
         sauver_profils(profils)
 
 
-# ---------- Actions (like / pass) ----------
+# ---------- Actions (like / pass / block / report) ----------
 def charger_actions():
     if not os.path.exists(ACTIONS_FILE):
         return {}
@@ -136,18 +116,58 @@ def enregistrer_action(user_id, cible_id, action):
     uid = str(user_id)
     if uid not in actions:
         actions[uid] = {}
-    actions[uid][str(cible_id)] = action
+    actions[uid][str(cible_id)] = {"action": action, "date": time.time()}
     sauver_actions(actions)
 
 
+def _info_action(val):
+    """Compatibilité : ancienne action = str, nouvelle = dict {action, date}."""
+    if isinstance(val, dict):
+        return val.get("action"), val.get("date", 0)
+    return val, 0  # ancienne donnée sans date
+
+
 def deja_vus(user_id):
+    """Profils à NE PLUS montrer : likés, bloqués, signalés (définitifs),
+    ET passés il y a moins de 24h."""
+    actions = charger_actions()
+    mes_actions = actions.get(str(user_id), {})
+    maintenant = time.time()
+    exclus = set()
+    for cible_id, val in mes_actions.items():
+        action, date = _info_action(val)
+        if action in ("like", "block", "report"):
+            exclus.add(cible_id)  # définitif
+        elif action == "pass":
+            if maintenant - date < 24 * 3600:
+                exclus.add(cible_id)  # passé il y a moins de 24h
+            # sinon : recyclable, on ne l'exclut pas
+    return exclus
+
+
+def vus_definitivement(user_id):
+    """Profils définitivement écartés (likés, bloqués, signalés) — jamais recyclés."""
+    actions = charger_actions()
+    mes_actions = actions.get(str(user_id), {})
+    exclus = set()
+    for cible_id, val in mes_actions.items():
+        action, _ = _info_action(val)
+        if action in ("like", "block", "report"):
+            exclus.add(cible_id)
+    return exclus
+
+
+def deja_touches(user_id):
+    """Tous les profils sur lesquels on a déjà fait une action (peu importe laquelle)."""
     actions = charger_actions()
     return set(actions.get(str(user_id), {}).keys())
 
 
 def a_like(user_id, cible_id):
     actions = charger_actions()
-    return actions.get(str(user_id), {}).get(str(cible_id)) == "like"
+    val = actions.get(str(user_id), {}).get(str(cible_id))
+    action, _ = _info_action(val)
+    return action == "like"
 
 
 def reset_actions(user_id):
@@ -196,9 +216,6 @@ def get_matches(user_id):
 def sont_matchs(user_a, user_b):
     """Vrai si les deux personnes ont matché."""
     return str(user_b) in get_matches(user_a)
-
-BLOCKS_FILE = "blocks.json"
-REPORTS_FILE = "reports.json"
 
 
 # ---------- Blocages ----------
@@ -260,9 +277,17 @@ def compter_blocages_recus(cible_id):
     for bloqueur, liste in blocks.items():
         if str(cible_id) in liste:
             total += 1
-    return total      
+    return total
 
 
+def compter_signalements_recus(cible_id):
+    """Compte combien de personnes DIFFÉRENTES ont signalé cible_id."""
+    reports = charger_reports()
+    signaleurs = set()
+    for r in reports:
+        if r["cible"] == str(cible_id):
+            signaleurs.add(r["par"])
+    return len(signaleurs)
 
 
 # ---------- Filtres de recherche ----------
@@ -300,6 +325,7 @@ def calculer_distance_km(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
+
 # ---------- Pause du profil ----------
 def mettre_en_pause(user_id, en_pause):
     """Active ou désactive la pause d'un profil."""
@@ -316,20 +342,17 @@ def supprimer_compte(user_id):
     """Efface définitivement le profil, ses actions et ses matchs (RGPD)."""
     uid = str(user_id)
 
-    # 1. Profil
     profils = charger_profils()
     if uid in profils:
         del profils[uid]
         sauver_profils(profils)
 
-    # 2. Actions (les siennes + celles des autres envers lui)
     actions = charger_actions()
     actions.pop(uid, None)
     for autre in list(actions.keys()):
         actions[autre].pop(uid, None)
     sauver_actions(actions)
 
-    # 3. Matchs
     matches = charger_matches()
     matches.pop(uid, None)
     for autre in list(matches.keys()):
@@ -358,27 +381,26 @@ def verification_en_cours(user_id):
     profil = get_profil(user_id)
     return bool(profil and profil.get("verif_en_cours"))
 
-def compter_signalements_recus(cible_id):
-    """Compte combien de personnes DIFFÉRENTES ont signalé cible_id."""
-    reports = charger_reports()
-    signaleurs = set()
-    for r in reports:
-        if r["cible"] == str(cible_id):
-            signaleurs.add(r["par"])
-    return len(signaleurs)
 
-
+# ---------- Bannissement ----------
 def bannir(user_id):
     """Bannit un profil : il devient invisible partout (comme une pause forcée)."""
     modifier_champ(user_id, "banni", True)
-    modifier_champ(user_id, "en_pause", True)  # invisible en découverte aussi
+    modifier_champ(user_id, "en_pause", True)
 
 
 def est_banni(user_id):
     profil = get_profil(user_id)
     return bool(profil and profil.get("banni"))
 
-    # ---------- Statistiques (admin) ----------
+
+def debannir(user_id):
+    """Lève le bannissement d'un profil et le réactive."""
+    modifier_champ(user_id, "banni", False)
+    modifier_champ(user_id, "en_pause", False)
+
+
+# ---------- Statistiques (admin) ----------
 def statistiques():
     """Renvoie un dictionnaire de statistiques globales."""
     profils = charger_profils()
@@ -387,7 +409,6 @@ def statistiques():
     en_pause = sum(1 for p in profils.values() if p.get("en_pause"))
     bannis = sum(1 for p in profils.values() if p.get("banni"))
 
-    # Compter les matchs (chaque paire comptée une fois)
     matches = charger_matches()
     paires = set()
     for uid, liste in matches.items():
@@ -404,27 +425,19 @@ def statistiques():
     }
 
 
-def debannir(user_id):
-    """Lève le bannissement d'un profil et le réactive."""
-    modifier_champ(user_id, "banni", False)
-    modifier_champ(user_id, "en_pause", False)
-
-   
-
-
 # ---------- Statistiques personnelles d'un utilisateur ----------
 def stats_utilisateur(user_id):
     """Renvoie les stats personnelles : likes reçus, matchs."""
     uid = str(user_id)
 
-    # Likes reçus (combien de personnes ont liké cet utilisateur)
     actions = charger_actions()
     likes_recus = 0
     for autre, cibles in actions.items():
-        if cibles.get(uid) == "like":
+        val = cibles.get(uid)
+        action, _ = _info_action(val)
+        if action == "like":
             likes_recus += 1
 
-    # Matchs
     nb_matchs = len(get_matches(user_id))
 
     return {"likes_recus": likes_recus, "matchs": nb_matchs}
@@ -438,6 +451,7 @@ def est_nouveau(profil, jours=3):
         return False
     secondes = jours * 24 * 3600
     return (time.time() - date_inscription) < secondes
+
 
 # ---------- Activité et rappels ----------
 def noter_activite(user_id):
@@ -464,10 +478,8 @@ def profils_a_relancer(inactif_apres_h, pas_avant_h):
         derniere = profil.get("derniere_activite")
         if not derniere:
             continue
-        # Inactif depuis assez longtemps ?
         if (maintenant - derniere) < seuil_inactif:
             continue
-        # Pas déjà relancé récemment ?
         dernier_rappel = profil.get("dernier_rappel", 0)
         if (maintenant - dernier_rappel) < seuil_rappel:
             continue
@@ -481,8 +493,7 @@ def noter_rappel(user_id):
     modifier_champ(user_id, "dernier_rappel", time.time())
 
 
-
-
+# ---------- Limite de likes quotidienne ----------
 def _aujourdhui():
     """Renvoie la date du jour au format texte 'AAAA-MM-JJ'."""
     return datetime.date.today().isoformat()
@@ -497,7 +508,6 @@ def likes_restants(user_id, limite_normale, limite_verifie):
     limite = limite_verifie if profil.get("verifie") else limite_normale
 
     compteur = profil.get("likes_jour", {})
-    # Si le compteur date d'un autre jour, il est remis à zéro
     if compteur.get("date") != _aujourdhui():
         return limite
 
@@ -512,12 +522,12 @@ def consommer_like(user_id):
         return
     compteur = profil.get("likes_jour", {})
     if compteur.get("date") != _aujourdhui():
-        # Nouveau jour : on repart de zéro
         compteur = {"date": _aujourdhui(), "nombre": 0}
     compteur["nombre"] = compteur.get("nombre", 0) + 1
     modifier_champ(user_id, "likes_jour", compteur)
 
-    # ---------- Langue de l'utilisateur ----------
+
+# ---------- Langue de l'utilisateur ----------
 def set_langue(user_id, langue):
     """Enregistre la langue choisie ('fr', 'en', 'ru')."""
     profils = charger_profils()
@@ -526,7 +536,6 @@ def set_langue(user_id, langue):
         profils[uid]["langue"] = langue
         sauver_profils(profils)
     else:
-        # Profil pas encore créé : on stocke la langue à part
         langues = _charger_langues()
         langues[uid] = langue
         _sauver_langues(langues)
@@ -537,7 +546,6 @@ def get_langue(user_id):
     profil = get_profil(user_id)
     if profil and profil.get("langue"):
         return profil["langue"]
-    # Sinon on regarde dans le stockage temporaire
     langues = _charger_langues()
     return langues.get(str(user_id), "fr")
 
@@ -553,3 +561,35 @@ def _charger_langues():
 def _sauver_langues(langues):
     with open("langues.json", "w", encoding="utf-8") as f:
         json.dump(langues, f, ensure_ascii=False, indent=2)
+
+def likes_recus_en_attente(user_id):
+    """Compte les personnes qui ont liké user_id SANS qu'il les ait likées en retour."""
+    actions = charger_actions()
+    uid = str(user_id)
+    mes_actions = actions.get(uid, {})
+    total = 0
+    for autre, cibles in actions.items():
+        if autre == uid:
+            continue
+        val = cibles.get(uid)
+        action, _ = _info_action(val)
+        if action == "like":
+            # Est-ce que j'ai déjà liké cette personne ? (sinon c'est en attente)
+            mon_action, _ = _info_action(mes_actions.get(autre))
+            if mon_action != "like":
+                total += 1
+    return total
+
+
+def peut_notifier_like(user_id, intervalle_heures=3):
+    """Anti-spam : vrai si on n'a pas notifié cette personne depuis X heures."""
+    profil = get_profil(user_id)
+    if not profil:
+        return False
+    dernier = profil.get("derniere_notif_like", 0)
+    return (time.time() - dernier) > intervalle_heures * 3600
+
+
+def noter_notif_like(user_id):
+    """Mémorise qu'on vient d'envoyer une notif de like."""
+    modifier_champ(user_id, "derniere_notif_like", time.time())

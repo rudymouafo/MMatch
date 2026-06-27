@@ -117,9 +117,9 @@ TRADUCTIONS = {
 
     # ---------- Étape 5 : localisation ----------
     "demande_localisation": {
-        "fr": "Dis-moi <b>où tu te trouves</b> 🌍\n\nPartage ta position avec le bouton ci-dessous,\nou écris simplement le <b>nom de ta ville</b>.",
-        "en": "Tell me <b>where you are</b> 🌍\n\nShare your location with the button below,\nor simply type the <b>name of your city</b>.",
-        "ru": "Скажи, <b>где ты находишься</b> 🌍\n\nПоделись геопозицией кнопкой ниже,\nили просто напиши <b>название своего города</b>.",
+        "fr": "Dis-moi <b>où tu te trouves</b> 🌍\n\nAppuie sur le bouton ci-dessous pour <b>partager ta position</b> 👇",
+        "en": "Tell me <b>where you are</b> 🌍\n\nTap the button below to <b>share your location</b> 👇",
+        "ru": "Скажи, <b>где ты находишься</b> 🌍\n\nНажми кнопку ниже, чтобы <b>поделиться местоположением</b> 👇",
     },
     "localisation_gps_ok": {
         "fr": "Position enregistrée ✨\n\nRaconte-toi en quelques mots… une <b>petite bio</b> qui te ressemble 💬",
@@ -132,7 +132,7 @@ TRADUCTIONS = {
         "ru": "Записано ✨\n\nРасскажи о себе в нескольких словах… <b>короткое описание</b>, которое тебе подходит 💬",
     },
     "ville_trop_courte": {
-        "fr": "J'aimerais en savoir un peu plus 🌍\nÉcris le nom de ta ville, ou partage ta position avec le bouton.",
+        "fr": "J'aimerais en savoir un peu plus 🌍\nAppuie sur le bouton pour partager ta position.",
         "en": "I'd like to know a bit more 🌍\nType your city name, or share your location with the button.",
         "ru": "Хотелось бы узнать чуть больше 🌍\nНапиши название города или поделись геопозицией кнопкой.",
     },
@@ -468,9 +468,9 @@ TRADUCTIONS = {
         "ru": "Твоё сердце склоняется к… 💘",
     },
     "demande_nouvelle_loc": {
-        "fr": "Partage ta nouvelle position 🌍\nou écris le <b>nom de ta ville</b>.",
-        "en": "Share your new location 🌍\nor type the <b>name of your city</b>.",
-        "ru": "Поделись новой геопозицией 🌍\nили напиши <b>название города</b>.",
+        "fr": "Partage ta nouvelle position 🌍\nAppuie sur le bouton ci-dessous 👇",
+        "en": "Share your new location 🌍\nTap the button below 👇",
+        "ru": "Поделись новой геопозицией 🌍\nНажми кнопку ниже 👇",
     },
     "loc_maj": {
         "fr": "Position mise à jour ✨",
@@ -851,6 +851,22 @@ TRADUCTIONS = {
         "fr": "⚠️ <b>Petit point important !</b>\n\nTu n'as pas encore de <b>nom d'utilisateur Telegram</b>. Sans lui, tes matchs ne pourront pas te contacter ! 😔\n\n<b>Comment en créer un (1 minute) :</b>\n1️⃣ Va dans les <b>Réglages</b> de Telegram\n2️⃣ Touche <b>« Nom d'utilisateur »</b>\n3️⃣ Choisis un nom (ex : @julie_paris)\n\nFais-le maintenant, puis reviens ici 🌸\n<i>C'est ce qui te permettra de rencontrer du monde !</i>",
         "en": "⚠️ <b>Important note!</b>\n\nYou don't have a <b>Telegram username</b> yet. Without it, your matches won't be able to contact you! 😔\n\n<b>How to create one (1 minute):</b>\n1️⃣ Go to Telegram <b>Settings</b>\n2️⃣ Tap <b>« Username »</b>\n3️⃣ Choose a name (e.g. @julie_paris)\n\nDo it now, then come back here 🌸\n<i>This is what will let you meet people!</i>",
         "ru": "⚠️ <b>Важный момент!</b>\n\nУ тебя ещё нет <b>имени пользователя Telegram</b>. Без него твои совпадения не смогут связаться с тобой! 😔\n\n<b>Как создать (1 минута):</b>\n1️⃣ Зайди в <b>Настройки</b> Telegram\n2️⃣ Нажми <b>« Имя пользователя »</b>\n3️⃣ Выбери имя (напр. @julie_paris)\n\nСделай это сейчас, затем вернись сюда 🌸\n<i>Именно это позволит тебе знакомиться!</i>",
+    },
+    "btn_passer_etape": {"fr": "⏭️ Passer", "en": "⏭️ Skip", "ru": "⏭️ Пропустить"},
+    "demande_bio_optionnelle": {
+        "fr": "💬 <b>Parle-nous un peu de toi</b> (optionnel)\n\nÉcris une petite bio qui te ressemble, ou appuie sur <b>⏭️ Passer</b> pour le faire plus tard. 🌸",
+        "en": "💬 <b>Tell us a bit about yourself</b> (optional)\n\nWrite a short bio that suits you, or tap <b>⏭️ Skip</b> to do it later. 🌸",
+        "ru": "💬 <b>Расскажи немного о себе</b> (необязательно)\n\nНапиши короткое описание или нажми <b>⏭️ Пропустить</b>, чтобы сделать это позже. 🌸",
+    },
+    "notif_like_recu": {
+        "fr": "💕 <b>Quelqu'un vient de te liker !</b>\n\nReviens vite découvrir qui pourrait te plaire… c'est peut-être un match qui t'attend ! 🔥",
+        "en": "💕 <b>Someone just liked you!</b>\n\nCome back and discover who might catch your eye… maybe a match is waiting for you! 🔥",
+        "ru": "💕 <b>Кто-то что лайкнул тебя!</b>\n\nВозвращайся скорее и узнай, кто может понравиться… возможно, тебя ждёт совпадение! 🔥",
+    },
+    "rappel_likes_attente": {
+        "fr": "💞 <b>{n} personne(s) t'ont liké !</b>\n\nElles attendent peut-être que tu fasses le premier pas. Reviens découvrir qui ! 🔥",
+        "en": "💞 <b>{n} person(s) liked you!</b>\n\nThey might be waiting for you to make the first move. Come discover who! 🔥",
+        "ru": "💞 <b>{n} человек(а) лайкнули тебя!</b>\n\nВозможно, они ждут твоего первого шага. Заходи и узнай кто! 🔥",
     },
 
 

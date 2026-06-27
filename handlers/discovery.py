@@ -163,24 +163,45 @@ def correspond(moi, autre):
 
 
 def trouver_prochain_profil(user_id):
+    from database import deja_touches, vus_definitivement
     moi = get_profil(user_id)
     if not moi:
         return None, None
     profils = charger_profils()
-    vus = deja_vus(user_id)
-    for uid, autre in profils.items():
+
+    touches = deja_touches(user_id)
+    a_exclure = deja_vus(user_id)
+    definitifs = vus_definitivement(user_id)
+
+    def profil_ok(uid, autre):
         if uid == str(user_id):
-            continue
-        if uid in vus:
-            continue
+            return False
         if est_bloque(user_id, uid):
-            continue
+            return False
         if autre.get("en_pause"):
-            continue
+            return False
         if autre.get("banni"):
+            return False
+        return correspond(moi, autre)
+
+    # ---- PASSE 1 : profils JAMAIS vus (priorité) ----
+    for uid, autre in profils.items():
+        if uid in touches:
             continue
-        if correspond(moi, autre):
+        if profil_ok(uid, autre):
             return uid, autre
+
+    # ---- PASSE 2 : profils passés il y a +24h (recyclage) ----
+    for uid, autre in profils.items():
+        if uid in definitifs:
+            continue
+        if uid in a_exclure:
+            continue
+        if uid not in touches:
+            continue
+        if profil_ok(uid, autre):
+            return uid, autre
+
     return None, None
 
 
@@ -327,13 +348,15 @@ async def aimer(callback: CallbackQuery):
     await callback.answer()
 
     if not a_like(cible_id, user_id):
+        # Notif "quelqu'un t'a liké" (anonyme, pas trop souvent)
         try:
-            stats = stats_utilisateur(cible_id)
-            if stats["likes_recus"] == 1:
+            from database import peut_notifier_like, noter_notif_like, est_en_pause
+            if peut_notifier_like(cible_id) and not est_en_pause(cible_id):
                 await callback.bot.send_message(
                     int(cible_id),
-                    t(cible_id, "like_recu"),
+                    t(cible_id, "notif_like_recu"),
                 )
+                noter_notif_like(cible_id)
         except Exception:
             pass
 
@@ -354,7 +377,7 @@ async def signaler(callback: CallbackQuery):
 
     enregistrer_report(user_id, cible_id)
     bloquer(user_id, cible_id)
-    enregistrer_action(user_id, cible_id, "pass")
+    enregistrer_action(user_id, cible_id, "report")
 
     await callback.answer(t(user_id, "signalement_envoye"), show_alert=True)
 
@@ -386,7 +409,7 @@ async def bloquer_profil(callback: CallbackQuery):
     user_id = callback.from_user.id
 
     bloquer(user_id, cible_id)
-    enregistrer_action(user_id, cible_id, "pass")
+    enregistrer_action(user_id, cible_id, "block")
 
     await callback.answer(t(user_id, "profil_bloque_alert"), show_alert=True)
 

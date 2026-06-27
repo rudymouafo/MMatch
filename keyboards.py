@@ -219,3 +219,12 @@ def clavier_swipe(user_id, cible_id):
          InlineKeyboardButton(text=t(user_id, "sw_bloquer"), callback_data=f"block_{cible_id}")],
         [InlineKeyboardButton(text=t(user_id, "sw_arreter"), callback_data="stop_decouverte")],
     ])
+def clavier_bio(user_id):
+    from traductions import t
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=t(user_id, "btn_passer_etape"))],
+            [KeyboardButton(text=t(user_id, "btn_precedent"))],
+        ],
+        resize_keyboard=True,
+    )

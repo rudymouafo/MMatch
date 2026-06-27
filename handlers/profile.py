@@ -240,10 +240,10 @@ async def edit_localisation(message: Message, state: FSMContext):
 
 @router.message(Modification.localisation, F.location)
 async def set_localisation_gps(message: Message, state: FSMContext):
-    from database import ville_depuis_gps
+    from database import ville_depuis_gps_async
     lat = message.location.latitude
     lon = message.location.longitude
-    ville = ville_depuis_gps(lat, lon)
+    ville = await ville_depuis_gps_async(lat, lon)
     modifier_champ(message.from_user.id, "lat", lat)
     modifier_champ(message.from_user.id, "lon", lon)
     modifier_champ(message.from_user.id, "ville", ville)

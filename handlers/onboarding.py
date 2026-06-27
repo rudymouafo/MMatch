@@ -18,6 +18,7 @@ from keyboards import (
     clavier_medias,
     clavier_telephone,
     clavier_langue,
+    clavier_bio,
     clavier_cgu_trad,
     menu_profil,
     menu_principal,
@@ -320,15 +321,16 @@ async def saisir_recherche(message: Message, state: FSMContext):
 # ---------- Étape 5 : localisation (GPS uniquement) ----------
 @router.message(Inscription.localisation, F.location)
 async def saisir_localisation_gps(message: Message, state: FSMContext):
-    from database import ville_depuis_gps
+    from database import ville_depuis_gps_async
     lat = message.location.latitude
     lon = message.location.longitude
-    ville = ville_depuis_gps(lat, lon)
+    ville = await ville_depuis_gps_async(lat, lon)
     await state.update_data(lat=lat, lon=lon, ville=ville)
     await message.answer(
         progression(message.from_user.id, 6) + t(message.from_user.id, "localisation_gps_ok"),
-        reply_markup=clavier_precedent(message.from_user.id),
+        reply_markup=clavier_bio(message.from_user.id),
     )
+    await message.answer(t(message.from_user.id, "demande_bio_optionnelle"))
     await state.set_state(Inscription.bio)
 
 
@@ -344,10 +346,21 @@ async def localisation_pas_de_texte(message: Message, state: FSMContext):
 
 
 # ---------- Étape 6 : bio ----------
+@router.message(Inscription.bio, F.text.contains("⏭️"))
+async def passer_bio(message: Message, state: FSMContext):
+    await state.update_data(bio="", medias=[])
+    await message.answer(
+        progression(message.from_user.id, 7) + t(message.from_user.id, "demande_bio"),
+        reply_markup=clavier_medias(message.from_user.id),
+    )
+    await state.set_state(Inscription.medias)
+
+
 @router.message(Inscription.bio)
 async def saisir_bio(message: Message, state: FSMContext):
     if not message.text:
-        await message.answer(t(message.from_user.id, "bio_attendue"))
+        await message.answer(t(message.from_user.id, "demande_bio_optionnelle"),
+                             reply_markup=clavier_bio(message.from_user.id))
         return
     bio = message.text.strip()
     if len(bio) > config.BIO_MAX:
